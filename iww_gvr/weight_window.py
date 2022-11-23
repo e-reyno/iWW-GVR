@@ -115,7 +115,7 @@ class WW:
     _director_1: Optional[List[float]]
     _director_2: Optional[List[float]]
 
-    def __init__(self, data: Dict, filename: str):
+    def __init__(self, data: Dict, filename: str, particle_type=None):
         self.filename = filename
         self.plotter = Plotter(self)
 
@@ -138,6 +138,7 @@ class WW:
         i_ints = int(sum(self._fine_ints_list_i))
         j_ints = int(sum(self._fine_ints_list_j))
         k_ints = int(sum(self._fine_ints_list_k))
+        #particles = [particle_type]
         particles = ['n']
         if len(data['values']) > 1:
             particles += ['p']
@@ -252,10 +253,10 @@ class WW:
             max_ratio = self.ratios_total_max[particle].max()
 
             # Formatting of the information
-            text += f'Min Value       : {min_value:.5f}\n' \
-                    f'Max Value       : {max_value:.5f}\n' \
-                    f'Max Ratio       : {max_ratio:.5f}\n' \
-                    f'No.Bins > 0 [%] : {percent_positive_values:.2f}\n' \
+            text += f'Min Value       : {min_value:.4g}\n' \
+                    f'Max Value       : {max_value:.4g}\n' \
+                    f'Max Ratio       : {max_ratio:.4g}\n' \
+                    f'No.Bins > 0 [%] : {percent_positive_values:.4g}\n' \
                     f'Neg. Value      : {"YES" if min_value < 0 else "NO"}\n \n'
 
         text += f'Coordinates     : {self.coordinates}\n \n'
@@ -478,11 +479,15 @@ class WW:
 
     def remove_particle(self):
         """Removes the p particle if the WW has 2 particle types"""
-        if len(self.particles) == 1:
-            raise ValueError('The WW already has only 1 particle type')
         del self.values['p']
         return
 
+    def remove_energy_bin(self, energy, particle):
+        "reduce number of energy bins in weight window"
+        del self.values[particle][energy]
+        return
+        
+        
     def filter_ratios(self, max_ratio: float):
         """Turns off the WW in the voxels that have a ratio greater than max_ratio."""
         if self.ratios is None:
