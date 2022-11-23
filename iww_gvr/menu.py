@@ -14,6 +14,7 @@ Author: Alvaro Cubi
 """
 
 import os
+import math
 from copy import deepcopy
 from typing import List
 
@@ -38,7 +39,7 @@ MAIN_MENU = """
 OPERATE_MENU = """             
  * Softening and normalize   (soft)
  * Add                       (add)
- * Remove                    (rem)
+ * Remove Particle/Energy    (rem)
  * Mitigate long histories   (mit)
  * Exit                      (end)
 """
@@ -129,6 +130,30 @@ class Menu:
         except ValueError:
             print("Not a valid index...")
             return self.select_ww_index()
+    
+    def select_ww_particle(self, ww):
+        inp = input(" Select the particle type: 'n' or 'p' ")
+        try:
+            if inp not in [i for i in ww.particles]:
+                print(" invalid particle chosen")
+                return self.select_ww_particle(ww)
+            return inp
+        except ValueError:
+            print(" Invalid particle input")
+            return self.select_ww_particle(ww)
+
+    def select_ww_energy(self, ww, particle):
+        print("\n Energy bins: ", ww.energies[particle])
+        inp = float(input(" Select the energy bin from above: "))
+        try:
+            if inp not in [i for i in ww.energies[particle]]:
+                print(" Invalid energy input")
+                return self.select_ww_energy()
+            return inp
+
+        except ValueError:
+            print(" Invalid energy input")
+            return self.select_ww_energy()
 
     # Commands Main Menu ##############################################
 
@@ -178,6 +203,8 @@ class Menu:
             return self.go_main_menu("No WWs loaded...")
         idx = self.select_ww_index()
         ww = self.ww_list[idx]
+        if ww.coordinates == 'cart':
+            return self.go_main_menu("Can't plot in cartesian coordinates yet... \n")
         ww.plotter.plot_interactive_plane(ww.particles[0], ww.energies[ww.particles[0]][0])
         return self.go_main_menu()
 
@@ -229,14 +256,30 @@ class Menu:
         return self.go_main_menu(ww.info)
 
     def command_rem(self):
+        """This member function operates the removal of particles or energy bins
+        """
         if len(self.ww_list) == 0:
             return self.go_operate_menu("No WWs loaded...")
         idx = self.select_ww_index()
         ww = self.ww_list[idx]
-        if len(ww.particles) == 1:
-            return self.go_operate_menu('The WW already has only 1 particle type...')
-        ww.remove_particle()
-        return self.go_main_menu(ww.info)
+        rem_input = input("What would you like to remove: \n"
+              "Particle: (p) \n"
+              "Energy bin: (e) \n")
+        if rem_input == 'p':
+            if len(ww.particles) == 1:
+                return self.go_operate_menu('The WW already has only 1 particle type...')
+            ww.remove_particle(ww)
+            return self.go_main_menu(ww.info)
+        elif rem_input == 'e':
+            particle = self.select_ww_particle(ww)
+            if len(ww.energies[particle]) == 1:
+                return self.go_operate_menu('The WW already has only 1 energy bin...')
+            energy = self.select_ww_energy(ww, particle)
+            ww.remove_energy_bin(energy, particle)
+            return self.go_main_menu(ww.info)
+        else:
+            print("Enter a valid input ! (p/e)")
+            return self.command_rem()
 
     def command_mit(self):
         if len(self.ww_list) == 0:
